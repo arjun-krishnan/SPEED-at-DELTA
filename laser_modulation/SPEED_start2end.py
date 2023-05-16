@@ -46,21 +46,21 @@ elec=np.copy(bunch_init)
 l1_wl= 800e-9   # wavelength of the laser
 l1_sigx= 1e-3   # sigma width at the focus
 l1_fwhm=45e-15  # pulse length 
-l1_E= 0e-3      # pulse energy
+l1_E= 4e-3      # pulse energy
 
 ##### defining Laser 2 #####
 l2_wl= 400e-9
 l2_sigx= 1e-3
 l2_fwhm=45e-15
-l2_E= 0e-3
+l2_E= 4e-3
 
-C1_R56 = lambda I : 8.57242860e-04* I**2 + -1.17140062e-01* I + 1.61857761e+01
+C1_R56 = lambda I : 8.57242860e-04* I**2 + -1.17140062e-01* I + 1.61857761e+01   # Current to R56 relation to assign the delay for the second seed pulse
 
 R56_1_I= 300                    # Current for the first chicane
 R56_1_set = C1_R56(R56_1_I)     # Corresponding R56 value in microns
 
 ##### defining the magnetic configuration#####
-lattice = Lattice(E0= 1500, l1= l1_wl, l2= l2_wl, h=5, c1= R56_1_I, c2= 0, plot= 1)
+lattice = Lattice(E0= 1500, l1= l1_wl, l2= l2_wl, h=5, c1= R56_1_I, c2= 100, plot= 1)
 
 l1= Laser(wl=l1_wl,sigx=1*l1_sigx,sigy=l1_sigx/1,pulse_len=l1_fwhm,pulse_E=l1_E,focus=1.125,M2=1,pulsed=1,phi=0e10)
 l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.3125,X0=0.0e-3,Z_offset=(R56_1_set/2)*1e-6+0e-6,M2=1,pulsed=1,phi=0e10)
