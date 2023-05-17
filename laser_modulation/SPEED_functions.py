@@ -41,7 +41,7 @@ def calc_bn(tau0, wl):
     
     index = np.where(bn == max(bn))
     wl_max = wl[index]
-    print("Maximum bunching factor is", np.round(max(bn),4) , " at " , wl_max[0]*1e9 , " nm")
+    print("Maximum bunching factor is", np.round(max(bn),4) , " at " , np.round(wl_max[0]*1e9,2) , " nm")
     return(np.array(bn))
 
 
@@ -210,7 +210,7 @@ class Lattice:
             K= np.sqrt(4*laser_wl*e_gamma**2/period-2);
             B = 2*np.pi*K*m_e*c/(e_charge*period);
             factor=mu0*windings/gap;
-            IM1 =  1.365* B/factor;  # current for first modulator
+            IM1 =  1.14* B/factor;  # current for first modulator   . The factor 1.14 is the correction term to match the CST simulaitons
 
         if l2 == 0:
             IM2= 0
@@ -219,7 +219,7 @@ class Lattice:
             K= np.sqrt(4*laser_wl*e_gamma**2/period-2);
             B = 2*np.pi*K*m_e*c/(e_charge*period);
             factor=mu0*windings/gap;
-            IM2 =  1.365* B/factor;  # current for second modulator
+            IM2 =  1.14* B/factor;  # current for second modulator
         
         if h == 0:
             IR1= 0
@@ -228,7 +228,7 @@ class Lattice:
             K= np.sqrt(4*laser_wl*e_gamma**2/period-2);
             B = 2*np.pi*K*m_e*c/(e_charge*period);
             factor=mu0*windings/gap;
-            IR1 =  1.365* B/factor;  # current for radiator
+            IR1 =  1.14* B/factor;  # current for radiator
         
 
         ID1 = IM1/2
@@ -244,11 +244,14 @@ class Lattice:
                IM2 , -IM2 , IM2 , -IM2 , IM2 , -IM2 , IM2 , -IC2 , -ID3 , IC2 , IC2 , -ID4 , -IC2 , \
                IR1 , -IR1 , IR1 , -IR1 , IR1 , -IR1 , ID4 ]
 
-        factor=mu0*windings/gap
-        b0= np.zeros(len(curr))
+        factor = mu0*windings/gap * 1.19     #The factor 1.19 is the correction term to match the CST simulaitons
+        b0 = np.zeros(len(curr))
         for m in range(len(curr)):
             b0[m]=factor*curr[m]
-            
+           # if m in [11,12,13,14,27,28]:
+            #    b0[m] *= 1.19
+                
+        
         nm=len(curr) 
         magnet=period/2
         magnet2=magnet/2
@@ -412,7 +415,7 @@ def calc_R56(A11,A22,dE=7e-4,K=2,m=21,n=-1,wl=800e-9):
     R56_2= B2/(2*np.pi/wl)/dE
     rr2=R56_2                       #optimal R56(2)
     print("\nOptimum R56 values: ")
-    print("R56(2)= ", R56_2*1e6 ," microns")
+    print("R56(2)= ", np.round(R56_2*1e6,2) ," microns")
     R56_1= np.linspace(50e-6,2000e-6,1000)
     #R56_2= np.linspace(10e-6,85e-6,500)
     #RM=[]
@@ -434,7 +437,7 @@ def calc_R56(A11,A22,dE=7e-4,K=2,m=21,n=-1,wl=800e-9):
         rr1=r12
     else:
         rr1=r11                     #optimal R56(1)
-    print("R56(1)= ", rr1*1e6 ," microns")
+    print("R56(1)= ", np.round(rr1*1e6) ," microns")
     return(rr1,rr2)
     
 '''    
