@@ -92,7 +92,7 @@ def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R
     Dxprime= -4.3065e-9 
     
     if(Test):
-        slicelength=40e-6 
+        slicelength=60e-6 
         N_e=int(1e4)
         energyspread= 0e-4
         emitX= 0
@@ -181,7 +181,7 @@ class Laser:
         #return (central_E_field*phase)
         
 class Lattice:
-    def __init__(self, E0= 1500,l1= 800e-9, l2= 400e-9, h= 4, c1= 800, c2= 800, filename = None, plot = True):
+    def __init__(self, E0= 1492,l1= 800e-9, l2= 400e-9, h= 4, c1= 800, c2= 800, filename = None, plot = True):
         self.len= 5.74925
         windings=48 # upper plus lower coil
         gap=0.05 
