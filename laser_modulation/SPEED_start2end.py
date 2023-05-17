@@ -76,7 +76,7 @@ z,dE=calc_phasespace(elec_test,e_E,plot=True)
 A22=(max(dE))
 print("A1= ",A11,"\t A2= ",A22)
 
-R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=5)
+R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=3)
 
 #%%
 ###### Calculate the curresponding chicane currents and define a new lattice object
@@ -102,113 +102,33 @@ z,dE=calc_phasespace(elec_test,e_E,plot=True)
 A22=(max(dE))
 print("A1= ",A11,"\t A2= ",A22)
 
-R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=5)
+R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=3)
 
 #%%
 
+elec = define_bunch(E0=e_E,dE=sigma_E,N=1e5,slicelength=slicelength)
 print("\nTracking through the lattice...")
 elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
-plt.figure()
 z,dE=calc_phasespace(elec_M1,e_E,plot=True)
 
-
-#%%
-
 plt.figure()
-wl=np.linspace(20e-9,250e-9,1001)
-b=calc_bn(z,wl)                     #calculating bunching factor
+wl = np.linspace(20e-9,250e-9,1001)
+b = calc_bn(z,wl)                     #calculating bunching factor
 plt.plot(wl,b)
 #plot_slice(z, wl, n_slice=100)
 
 #%%
+########## Trying out different R56_2 values ###########
+elec = define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength=slicelength)
+IC2_list = np.linspace(IC2-50,IC2+50,11)
+bmax = []
+for IC2 in IC2_list:
+    lattice = Lattice(E0= 1500, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= IC2 , plot= 0)
+    elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
+    z,dE=calc_phasespace(elec_M1,e_E,plot=False)
+    b = calc_bn(z,wl)
+    bmax.append(max(b))                    
+    plt.plot(wl,b)
 
-#### Test Tracking through Modulators
-elec_test= lsrmod_track(mod1,l1,bunch_test,tstep=tstep,disp_Progress=False)
-z,dE=calc_phasespace(elec_test,e_E,plot=False)
-#plt.plot(z,dE,',r')
-A11=(max(dE))
-
-#elec_test= lsrmod_track(mod2,l2,bunch_test,tstep=tstep,disp_Progress=False)
-#z,dE=calc_phasespace(elec_test,e_E,plot=False)
-#A22=(max(dE))
-#plt.plot(z,dE,',b')
-
-
-elec_test= lsrmod_track(mod2,l2,bunch_test,tstep=tstep,disp_Progress=False)
-z,dE=calc_phasespace(elec_test,e_E,plot=False)
-A22=(max(dE))
-print("A1= ",A11,"\t A2= ",A22)
-plt.plot(z,dE,',g')
-
-#Calculating the best choice of R56 for this specific A1 and A2
-r56_1,r56_2=calc_R56(A11, A22,dE=sigma_E,K=l1_wl/l2_wl,m=8,n=-1)
-
-#%%
-
-print("\n\nTracking through the lattice...")
-elec_M1= lsrmod_track(mod1,l1,elec,Lsr2=l2,tstep=tstep)
 plt.figure()
-z,dE=calc_phasespace(elec_M1,e_E,plot=True)
-
-elec_C1= lsrmod_track(chic1,l1,elec_M1,Lsr2=l2,tstep=tstep)
-plt.figure()
-z,dE=calc_phasespace(elec_C1,e_E,plot=True)
-
-elec_M2= lsrmod_track(mod2,l1,elec_C1,Lsr2=l2,tstep=tstep)
-plt.figure()
-z,dE=calc_phasespace(elec_M2,e_E,plot=True)
-
-elec_C2= lsrmod_track(chic2,l1,elec_M2,Lsr2=l2,tstep=tstep)
-plt.figure()
-z,dE=calc_phasespace(elec_C2,e_E,plot=True)
-
-
-
-#%%
-
-'''    
-bn=[]
-r1=np.linspace(rr2-5e-6,rr2+2.5e-6,11)
-for r in r1: 
-    p_end2= track_chicane(p_mod2,R56=r,isr=False)
-    tau2=-p_end2[4]*c
-    b=[]
-    wl=np.linspace(20.4e-9,20.6e-9,101)
-    b=calc_bn(tau2,wl)
-    bn.append(max(b))
-plt.plot(r1,bn)  
-print(max(bn),r1[bn.index(max(bn))])
-
-
-bunch=pd.DataFrame({"x":elec[0],"y":elec[1],"z":elec[2],"px":elec[3],"py":elec[4],"pz":elec[5]})
-write_results(bunch,"Bunch_after_mod1.txt")
-     
-
-
-mod1= Modulator(periodlen=0.20,periods=9,laser_wl=l1_wl,e_gamma=e_gamma)
-EE=np.linspace(0.2e-3,4e-3,10)
-l1_wl=800e-9
-l1_sigx=1.0e-3
-l1_w0=l1_sigx*np.sqrt(2)
-l1_fwhm= 40e-15
-A1_el,A1_py=[],[]
-for E1 in EE:
-    l1_E= E1
-    l1_P_max=l1_E/(0.94*l1_fwhm)
-
-    modify_lattice("lattice_test.lte",Bu=mod1_Bmax,P0=l1_P_max,w0=l1_w0)
-    subprocess.run(["mpiexec","-np","7","Pelegant","run_test.ele"])
-    dat=sdds.SDDS(0)
-    dat.load("run_test.out")
-    dE=(np.array(dat.columnData[5][0])*e_m*c**2/e_E)-1
-    #tau=-(np.array(dat.columnData[4][0])*c)
-    A1_el.append(max(dE))
-    #plt.plot(tau-np.mean(tau),dE,',b')
-    l1= Laser(wl=l1_wl,sigx=l1_sigx,pulse_len=l1_fwhm,pulse_E=l1_E,focus=mod1.len/2,M2=1.0,pulsed=False)
-    elec_test= lsrmod_track(mod1,l1,bunch_test,tstep=tstep)
-    z,dE=plot_phasespace(elec_test)
-    A1_py.append(max(dE))
-A_rat=np.array(A1_el)/np.array(A1_py)
-plt.figure()
-plt.plot(EE,A_rat)
-'''
+plt.plot(IC2_list, bmax)
