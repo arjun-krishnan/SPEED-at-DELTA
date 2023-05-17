@@ -75,7 +75,7 @@ def write_results(bunch,file_path):
         bunch.to_csv(file_path)
         
 
-def define_bunch(Test,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R56_dE=0.0007):
+def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R56_dE=0.0007):
     N_e=int(N) # number of electrons
     
     ##### electron parameter #####
