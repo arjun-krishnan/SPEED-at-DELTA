@@ -34,9 +34,14 @@ mu0 = const.mu_0                # vacuum permeability
 @jit(parallel = True)
 def calc_bn(tau0, wl):
     bn = []
+    
     for i in range(len(wl)):
         z = np.sum(np.exp(-1j * 2 * np.pi * (tau0 / wl[i])))
         bn.append(abs(z) / len(tau0))
+    
+    index = np.where(bn == max(bn))
+    wl_max = wl[index]
+    print("Maximum bunching factor is", np.round(max(bn),4) , " at " , wl_max[0]*1e9 , " nm")
     return(np.array(bn))
 
 
@@ -406,6 +411,7 @@ def calc_R56(A11,A22,dE=7e-4,K=2,m=21,n=-1,wl=800e-9):
     B2=(m+(0.81*m**(1/3)))/((K*m+n)*A2)
     R56_2= B2/(2*np.pi/wl)/dE
     rr2=R56_2                       #optimal R56(2)
+    print("\nOptimum R56 values: ")
     print("R56(2)= ", R56_2*1e6 ," microns")
     R56_1= np.linspace(50e-6,2000e-6,1000)
     #R56_2= np.linspace(10e-6,85e-6,500)
