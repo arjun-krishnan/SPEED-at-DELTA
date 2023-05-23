@@ -18,6 +18,7 @@ import scipy.constants as const
 import scipy.io
 import scipy.interpolate
 from SPEED_functions import *
+from tqdm import tqdm
 
 ##### natural constants #####
 c = const.c                       # speed of light
@@ -50,11 +51,11 @@ l1_E = 4e-3      # pulse energy
 l2_wl= 400e-9
 l2_sigx= 1e-3
 l2_fwhm=45e-15
-l2_E= 5e-3
+l2_E= 6e-3
 
 #Delay_SecondPulse = lambda I : (8.57242860e-04* I**2 + -1.17140062e-01* I + 1.61857761e+01)/2   # Calculate the delay for the second seed pulse
 p = [ 6.29880952e-04, -8.26071429e-02,  1.10083333e+01]
-Delay_SecondPulse = lambda I : (p[0] * I**2 + p[1] * I + p[2] ) - 2
+Delay_SecondPulse = lambda I : (p[0] * I**2 + p[1] * I + p[2] ) - 3
 
 IC1 = 800                  # Current for the first chicane
 delay_z = Delay_SecondPulse(IC1) * 1e-6    # Corresponding R56 value in microns
@@ -92,7 +93,12 @@ IC2 = max(np.roots([0.203e-3 , -35.5e-3 , -R56_2_opt*1e6 + 4.01]))
 delay_z = Delay_SecondPulse(IC1) * 1e-6 
 
 lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= IC2 , plot= 1)
-lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= 700 , c2= 670 , plot= 1)
+
+## Comment these out if you dont want to give manual entries for C1 and C2
+lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= 670 , c2= 600 , plot= 1)
+delay_z = Delay_SecondPulse(670) * 1e-6
+##
+
 l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.3125,X0=0.0e-3,Z_offset=delay_z,M2=1,pulsed=1,phi=0e10)
 
 # elec_test = lsrmod_track(lattice,l1,bunch_test,tstep=tstep,disp_Progress=False)
@@ -108,7 +114,7 @@ l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E
 
 #%%
 
-elec = define_bunch(E0=e_E,dE=sigma_E,N=10e4,slicelength=slicelength)
+elec = define_bunch(E0=e_E,dE=sigma_E,N=5e4,slicelength=slicelength)
 print("\nTracking through the lattice...")
 elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
 z,dE=calc_phasespace(elec_M1,e_E,plot=True)
@@ -128,7 +134,7 @@ wl = np.linspace(20e-9, 220e-9, 1001)
 bmax = []
 for C2 in IC2_list:
     lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= C2 , plot= 0)
-    elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
+    elec_M1 = lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
     z,dE=calc_phasespace(elec_M1,e_E,plot=False)
     b = calc_bn(z,wl)
     bmax.append(max(b))                    
@@ -160,20 +166,21 @@ plt.plot(IC1_list, bmax)
 
 wl_h = [800e-9/5 , 800e-9/7 , 800e-9/9] 
 
-elec =  define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength=slicelength)
+elec =  define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength = 20e-6)
 
-C1I = np.linspace(600, 800, 11)
-C2I = np.linspace(600, 800, 11)
+C1I = np.linspace(200, 800, 21)
+C2I = np.linspace(200, 800, 21)
 
 wls = [np.linspace(wl_h[0]-5e-9, wl_h[0]+5e-9, 101) , np.linspace(wl_h[1]-5e-9, wl_h[1]+5e-9, 101) , np.linspace(wl_h[2]-5e-9, wl_h[2]+5e-9, 101)]
 
 bn_map = []
 for C1 in tqdm(C1I):
     bmax = [[],[],[]]
-    delay_z = Delay_SecondPulse(IC1) * 1e-6  
+    delay_z = Delay_SecondPulse(C1) * 1e-6  
     l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.125,Z_offset=delay_z)
     for C2 in C2I:
-        lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h = h , c1= C1 , c2= C2 , plot= 0)
+        print("C1 : ", C1, " C2 : ", C2)
+        lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h = 5 , c1= C1 , c2= C2 , plot= 0)
         elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
         z,dE=calc_phasespace(elec_M1,e_E,plot=False)
         for i in range(3):
@@ -190,3 +197,5 @@ for i in range(3):
     plt.contourf(C1I, C2I,bn_map[i],50)
     plt.colorbar(label="bn")
     plt.title(str(int(wl_h[i]*1e9))+" nm")
+    plt.xlabel("Chicane 1 current (A)")
+    plt.ylabel("Chicane 2 current (A)")
