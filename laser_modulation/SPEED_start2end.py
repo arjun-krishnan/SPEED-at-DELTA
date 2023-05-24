@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as const
 import scipy.io
-import scipy.interpolate
+from scipy import interpolate
 from SPEED_functions import *
 from tqdm import tqdm
 
@@ -120,7 +120,10 @@ plt.figure()
 wl = np.linspace(20e-9,250e-9,1001)
 b = calc_bn(z,wl)                     #calculating bunching factor
 plt.plot(wl,b)
-#plot_slice(z, wl, n_slice=100)
+
+wl_h = 160e-9
+slice_len = 800e-9
+z_slice, b_slice = plot_slice(z, np.array([wl_h]), slice_len)
 
 #%% Calculating the temporal power profile of the radiation
 
@@ -135,6 +138,8 @@ z_array    = np.linspace(-1.5*bunch_fwhm, 1.5*bunch_fwhm, 10001)
 gaus       = (1/bunch_sig/np.sqrt(2*np.pi)) * np.exp(-z_array**2/2/bunch_sig**2)
 bunch_dens = Ne_bunch * gaus
 plt.plot(z_array, bunch_dens)
+f_dens     = interpolate.interp1d(z_array, bunch_dens)
+Ne_slice   = f_dens(z_slice) * slice_len
 
 
 #%%
