@@ -14,7 +14,7 @@ import scipy.constants as const
 from scipy import interpolate,special
 import matplotlib.pyplot as plt
 from time import time
-from  numba import jit
+#from  numba import jit
 import pathlib
 import sys
 #import sdds
@@ -31,8 +31,8 @@ mu0 = const.mu_0                # vacuum permeability
 #e_E=1.492e9*e_charge   # electron energy in J
 #e_gamma=e_E/m_e/c**2 # Lorentz factor
 
-@jit(parallel = True)
-def calc_bn(tau0, wl):
+#@jit(parallel = True)
+def calc_bn(tau0, wl, printmax = True):
     bn = []
     
     for i in range(len(wl)):
@@ -41,7 +41,8 @@ def calc_bn(tau0, wl):
     
     index = np.where(bn == max(bn))
     wl_max = wl[index]
-    print("Maximum bunching factor is", np.round(max(bn),4) , " at " , np.round(wl_max[0]*1e9,2) , " nm")
+    if printmax:
+        print("Maximum bunching factor is", np.round(max(bn),4) , " at " , np.round(wl_max[0]*1e9,2) , " nm")
     return(np.array(bn))
 
 
@@ -59,7 +60,7 @@ def plot_slice(z, wl, slice_len=0, n_slice=40):
         if len(slice_zz) == 0:
             bn.append(0)
         else:
-            bn.append(max(calc_bn(slice_zz, wl)))
+            bn.append(max(calc_bn(slice_zz, wl, printmax = False)))
         i += 1
     plt.figure()
     plt.plot(z_slice, bn)
