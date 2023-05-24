@@ -62,8 +62,13 @@ def plot_slice(z, wl, slice_len=0, n_slice=40):
         else:
             bn.append(max(calc_bn(slice_zz, wl, printmax = False)))
         i += 1
+    
+    z_slice = np.array(z_slice) - np.mean(z_slice)
+    bn      = np.array(bn)
+    
     plt.figure()
     plt.plot(z_slice, bn)
+    return(z_slice, bn)
     
 def write_results(bunch,file_path):
     print("Writing to "+file_path+" ...")
