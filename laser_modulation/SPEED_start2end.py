@@ -90,14 +90,11 @@ R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=3)
 IC1 = max(np.roots([0.869e-3 , -6.236e-3 , -R56_1_opt*1e6 + 2.353]))
 IC2 = max(np.roots([0.203e-3 , -35.5e-3 , -R56_2_opt*1e6 + 4.01]))
 
+IC1, IC2 = 470, 610         # Comment these out if you dont want to give manual entries for C1 and C2
+
 delay_z = Delay_SecondPulse(IC1) * 1e-6 
 
 lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= IC2 , plot= 1)
-
-## Comment these out if you dont want to give manual entries for C1 and C2
-lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= 670 , c2= 600 , plot= 1)
-delay_z = Delay_SecondPulse(670) * 1e-6
-##
 
 l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.3125,X0=0.0e-3,Z_offset=delay_z,M2=1,pulsed=1,phi=0e10)
 
@@ -114,7 +111,7 @@ l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E
 
 #%%
 
-elec = define_bunch(E0=e_E,dE=sigma_E,N=5e4,slicelength=slicelength)
+elec = define_bunch(E0=e_E,dE=sigma_E,N=5e5,slicelength=100e-6)
 print("\nTracking through the lattice...")
 elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
 z,dE=calc_phasespace(elec_M1,e_E,plot=True)
@@ -125,41 +122,20 @@ b = calc_bn(z,wl)                     #calculating bunching factor
 plt.plot(wl,b)
 #plot_slice(z, wl, n_slice=100)
 
-#%%
-########## Trying out different R56_2 values ###########
+#%% Calculating the temporal power profile of the radiation
 
-elec = define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength=slicelength)
-IC2_list = np.linspace(IC2+50,IC2+100,11)
-wl = np.linspace(20e-9, 220e-9, 1001)
-bmax = []
-for C2 in IC2_list:
-    lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= C2 , plot= 0)
-    elec_M1 = lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
-    z,dE=calc_phasespace(elec_M1,e_E,plot=False)
-    b = calc_bn(z,wl)
-    bmax.append(max(b))                    
-    plt.plot(wl,b)
+beam_cur = 5e-3     # 5 mA
+rev_t    = 115.2/c  # revolution time
+bunch_Q  = beam_cur * rev_t
+Ne_bunch = bunch_Q / e_charge
 
-plt.figure()
-plt.plot(IC2_list, bmax)
+bunch_fwhm = 80e-12 *c                    # bunch length 80 ps in meters
+bunch_sig  = bunch_fwhm / 2.3548
+z_array    = np.linspace(-1.5*bunch_fwhm, 1.5*bunch_fwhm, 10001)
+gaus       = (1/bunch_sig/np.sqrt(2*np.pi)) * np.exp(-z_array**2/2/bunch_sig**2)
+bunch_dens = Ne_bunch * gaus
+plt.plot(z_array, bunch_dens)
 
-#%%
-########## Trying out different R56_1 values ###########
-
-elec = define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength=slicelength)
-IC1_list = np.linspace(IC1-50,IC1+50,11)
-bmax = []
-for C1 in IC1_list:
-    lattice = Lattice(E0= 1500, l1= l1_wl, l2= l2_wl, h=7, c1= C1 , c2= IC2 , plot= 0)
-    l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.3125,X0=0.0e-3,Z_offset=Delay_SecondPulse(C1)*1e-6 ,M2=1,pulsed=1,phi=0e10)
-    elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
-    z,dE=calc_phasespace(elec_M1,e_E,plot=False)
-    b = calc_bn(z,wl)
-    bmax.append(max(b))                    
-    plt.plot(wl,b)
-
-plt.figure()
-plt.plot(IC1_list, bmax)
 
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
@@ -199,3 +175,40 @@ for i in range(3):
     plt.title(str(int(wl_h[i]*1e9))+" nm")
     plt.xlabel("Chicane 1 current (A)")
     plt.ylabel("Chicane 2 current (A)")
+    
+#%%
+########## Trying out different R56_2 values ###########
+
+elec = define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength=slicelength)
+IC2_list = np.linspace(IC2+50,IC2+100,11)
+wl = np.linspace(20e-9, 220e-9, 1001)
+bmax = []
+for C2 in IC2_list:
+    lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= C2 , plot= 0)
+    elec_M1 = lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
+    z,dE=calc_phasespace(elec_M1,e_E,plot=False)
+    b = calc_bn(z,wl)
+    bmax.append(max(b))                    
+    plt.plot(wl,b)
+
+plt.figure()
+plt.plot(IC2_list, bmax)
+
+#%%
+########## Trying out different R56_1 values ###########
+
+elec = define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength=slicelength)
+IC1_list = np.linspace(IC1-50,IC1+50,11)
+bmax = []
+for C1 in IC1_list:
+    lattice = Lattice(E0= 1500, l1= l1_wl, l2= l2_wl, h=7, c1= C1 , c2= IC2 , plot= 0)
+    l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.3125,X0=0.0e-3,Z_offset=Delay_SecondPulse(C1)*1e-6 ,M2=1,pulsed=1,phi=0e10)
+    elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
+    z,dE=calc_phasespace(elec_M1,e_E,plot=False)
+    b = calc_bn(z,wl)
+    bmax.append(max(b))                    
+    plt.plot(wl,b)
+
+plt.figure()
+plt.plot(IC1_list, bmax)
+
