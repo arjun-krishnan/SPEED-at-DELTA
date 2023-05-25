@@ -138,14 +138,31 @@ bunch_sig  = bunch_fwhm / 2.3548
 z_array    = np.linspace(-1.5*bunch_fwhm, 1.5*bunch_fwhm, 10001)
 gaus       = (1/bunch_sig/np.sqrt(2*np.pi)) * np.exp(-z_array**2/2/bunch_sig**2)
 bunch_dens = Ne_bunch * gaus
-plt.plot(z_array, bunch_dens)
+#plt.plot(z_array, bunch_dens)
 f_dens     = interpolate.interp1d(z_array, bunch_dens)
+
 Ne_slice   = f_dens(z_slice) * slice_len
+P = b_slice**2 * Ne_slice**2  # * P0 (power emitted from a single electron)
+#plt.plot(z_slice , P)
 
-P = b_slice**2 * Ne_slice**2
+z_bunch = np.arange(-1.5*bunch_fwhm, 1.5*bunch_fwhm , slice_len)
+Ne_bunch_full = f_dens(z_bunch) * slice_len
+bn_incoherent = np.mean(b_slice[0:10])
+P_incoherent  = bn_incoherent**2 * Ne_bunch_full**2
+plt.plot(z_bunch, P_incoherent, label = "incoherent")
 
-z_leftpad = np.arange(z_array[0],z_slice[0],slice_len)
+z_leftpad  = np.arange(z_array[0], z_slice[0], slice_len)
+z_rightpad = np.arange(z_slice[-1], z_array[-1], slice_len)
 Ne_slice_left   = f_dens(z_leftpad) * slice_len
+Ne_slice_right  = f_dens(z_rightpad) * slice_len
+Ne_slice_full = np.concatenate((Ne_slice_left, Ne_slice , Ne_slice_right))
+
+bn_left , bn_right = bn_incoherent * np.ones(len(Ne_slice_left)) , bn_incoherent * np.ones(len(Ne_slice_right))
+bn_coherent = np.concatenate((bn_left, b_slice , bn_right))
+
+P_coherent  = bn_coherent**2 * Ne_slice_full**2
+#plt.plot()
+
 
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
