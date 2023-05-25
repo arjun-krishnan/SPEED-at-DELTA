@@ -55,7 +55,7 @@ l2_sigx= 1e-3
 l2_fwhm=45e-15
 l2_E= 6e-3
 
-#Delay_SecondPulse = lambda I : (8.57242860e-04* I**2 + -1.17140062e-01* I + 1.61857761e+01)/2   # Calculate the delay for the second seed pulse
+# Calculate the delay for the second seed pulse
 p = [ 6.29880952e-04, -8.26071429e-02,  1.10083333e+01]
 Delay_SecondPulse = lambda I : (p[0] * I**2 + p[1] * I + p[2] ) - 3
 
@@ -111,7 +111,7 @@ l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E
 
 # R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=4)
 
-#%%
+#%% 
 
 elec = define_bunch(E0=e_E,dE=sigma_E,N=5e5,slicelength=100e-6)
 print("\nTracking through the lattice...")
@@ -125,7 +125,7 @@ b = calc_bn(z,wl)                     #calculating bunching factor
 plt.plot(wl,b)
 
 wl_h      = 160e-9
-slice_len = 600e-9
+slice_len = 800e-9
 z_slice , b_slice = plot_slice(z, np.array([wl_h]), slice_len)
 z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2]
 
