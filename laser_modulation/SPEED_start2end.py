@@ -19,6 +19,7 @@ import scipy.io
 from scipy import interpolate
 from SPEED_functions import *
 from tqdm import tqdm
+import math
 
 ##### natural constants #####
 c = const.c                       # speed of light
@@ -135,34 +136,40 @@ Ne_bunch = bunch_Q / e_charge
 
 bunch_fwhm = 80e-12 *c                    # bunch length 80 ps in meters
 bunch_sig  = bunch_fwhm / 2.3548
-z_array    = np.linspace(-1.5*bunch_fwhm, 1.5*bunch_fwhm, 10001)
-gaus       = (1/bunch_sig/np.sqrt(2*np.pi)) * np.exp(-z_array**2/2/bunch_sig**2)
+z_bunch    = np.arange(-1.5*bunch_fwhm, 1.5*bunch_fwhm , slice_len)
+t_bunch    = z_bunch / c
+t_slice    = slice_len / c
+gaus       = (1/bunch_sig/np.sqrt(2*np.pi)) * np.exp(-z_bunch**2/2/bunch_sig**2)
 bunch_dens = Ne_bunch * gaus
 #plt.plot(z_array, bunch_dens)
-f_dens     = interpolate.interp1d(z_array, bunch_dens)
+f_dens     = interpolate.interp1d(z_bunch, bunch_dens)
 
 Ne_slice   = f_dens(z_slice) * slice_len
 P = b_slice**2 * Ne_slice**2  # * P0 (power emitted from a single electron)
 #plt.plot(z_slice , P)
 
-z_bunch = np.arange(-1.5*bunch_fwhm, 1.5*bunch_fwhm , slice_len)
 Ne_bunch_full = f_dens(z_bunch) * slice_len
 bn_incoherent = np.mean(b_slice[0:10])
 P_incoherent  = bn_incoherent**2 * Ne_bunch_full**2
-plt.plot(z_bunch, P_incoherent, label = "incoherent")
+plt.plot(t_bunch * 1e15 , P_incoherent / max(P_incoherent) , '-g' , label = "incoherent" )
 
-z_leftpad  = np.arange(z_array[0], z_slice[0], slice_len)
-z_rightpad = np.arange(z_slice[-1], z_array[-1], slice_len)
-Ne_slice_left   = f_dens(z_leftpad) * slice_len
-Ne_slice_right  = f_dens(z_rightpad) * slice_len
-Ne_slice_full = np.concatenate((Ne_slice_left, Ne_slice , Ne_slice_right))
+#z_leftpad  = np.arange(z_bunch[0], z_slice[0], slice_len)
+#z_rightpad = np.arange(z_slice[-1], z_bunch[-1], slice_len)
+#Ne_slice_left   = f_dens(z_leftpad) * slice_len
+#Ne_slice_right  = f_dens(z_rightpad) * slice_len
+#Ne_slice_full = np.concatenate((Ne_slice_left, Ne_slice , Ne_slice_right))
 
-bn_left , bn_right = bn_incoherent * np.ones(len(Ne_slice_left)) , bn_incoherent * np.ones(len(Ne_slice_right))
+N_pad = math.ceil(abs((z_slice[0] - z_bunch[0])/slice_len))
+bn_left , bn_right = bn_incoherent * np.ones(N_pad) , bn_incoherent * np.ones(N_pad)
 bn_coherent = np.concatenate((bn_left, b_slice , bn_right))
 
-P_coherent  = bn_coherent**2 * Ne_slice_full**2
-#plt.plot()
+P_coherent  = bn_coherent**2 * Ne_bunch_full**2
+plt.plot(t_bunch * 1e15 , P_coherent / max(P_incoherent) , '-r' , label = "coherent", alpha = 0.8)
 
+plt.xlim(-150 , 150)
+plt.xlabel("t (fs)")
+plt.ylabel("Power (arb. u.)")
+plt.legend()
 
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
