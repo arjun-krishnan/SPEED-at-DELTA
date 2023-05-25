@@ -127,7 +127,7 @@ plt.plot(wl,b)
 wl_h      = 160e-9
 slice_len = 800e-9
 z_slice , b_slice = plot_slice(z, np.array([wl_h]), slice_len)
-z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2]
+z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2] 
 
 #%% Calculating the temporal power profile of the radiation
 
@@ -172,6 +172,9 @@ plt.xlabel("t (fs)")
 plt.ylabel("Power (arb. u.)")
 plt.legend()
 plt.grid()
+
+print("Integrated power: \n Incoherent \t : ", E_incoherent ,"\n Coherent \t\t : ", E_coherent)
+print("Coherent to incoherent ratio :" , E_coherent/E_incoherent)
 
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
