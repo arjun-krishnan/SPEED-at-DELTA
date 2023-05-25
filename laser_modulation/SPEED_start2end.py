@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as const
 import scipy.io
+from scipy.integrate import simpson
 from scipy import interpolate
 from SPEED_functions import *
 from tqdm import tqdm
@@ -117,13 +118,14 @@ print("\nTracking through the lattice...")
 elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
 z,dE=calc_phasespace(elec_M1,e_E,plot=True)
 
+#%%
 plt.figure()
 wl = np.linspace(20e-9,250e-9,1001)
 b = calc_bn(z,wl)                     #calculating bunching factor
 plt.plot(wl,b)
 
-wl_h = 160e-9
-slice_len = 800e-9
+wl_h      = 160e-9
+slice_len = 600e-9
 z_slice , b_slice = plot_slice(z, np.array([wl_h]), slice_len)
 z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2]
 
@@ -144,6 +146,7 @@ bunch_dens = Ne_bunch * gaus
 
 f_dens     = interpolate.interp1d(z_bunch, bunch_dens)
 
+
 Ne_slice   = f_dens(z_slice) * slice_len
 P = b_slice**2 * Ne_slice**2  # * P0 (power emitted from a single electron)
 
@@ -151,18 +154,24 @@ Ne_bunch_full = f_dens(z_bunch) * slice_len
 bn_incoherent = np.mean(b_slice[0:10])
 P_incoherent  = bn_incoherent**2 * Ne_bunch_full**2
 plt.plot(t_bunch * 1e15 , P_incoherent / max(P_incoherent) , '-g' , label = "incoherent" )
+E_incoherent = simpson(P_incoherent, dx = t_slice)
 
-N_pad = math.ceil(abs((z_slice[0] - z_bunch[0])/slice_len))
-bn_left , bn_right = bn_incoherent * np.ones(N_pad) , bn_incoherent * np.ones(N_pad)
+
+N_pad = len(z_bunch) - len(z_slice)
+bn_left , bn_right = bn_incoherent * np.ones(int(N_pad/2)) , bn_incoherent * np.ones(int(N_pad/2))
+if N_pad % 2 == 1:
+    bn_right = bn_incoherent * np.ones(int(N_pad/2)+1)
 bn_coherent = np.concatenate((bn_left, b_slice , bn_right))
 
 P_coherent  = bn_coherent**2 * Ne_bunch_full**2
 plt.plot(t_bunch * 1e15 , P_coherent / max(P_incoherent) , '-r' , label = "coherent", alpha = 0.8)
+E_coherent = simpson(P_coherent, dx = t_slice)
 
 plt.xlim(-150 , 150)
 plt.xlabel("t (fs)")
 plt.ylabel("Power (arb. u.)")
 plt.legend()
+plt.grid()
 
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
