@@ -123,7 +123,8 @@ plt.plot(wl,b)
 
 wl_h = 160e-9
 slice_len = 800e-9
-z_slice, b_slice = plot_slice(z, np.array([wl_h]), slice_len)
+z_slice , b_slice = plot_slice(z, np.array([wl_h]), slice_len)
+z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2]
 
 #%% Calculating the temporal power profile of the radiation
 
@@ -141,6 +142,10 @@ plt.plot(z_array, bunch_dens)
 f_dens     = interpolate.interp1d(z_array, bunch_dens)
 Ne_slice   = f_dens(z_slice) * slice_len
 
+P = b_slice**2 * Ne_slice**2
+
+z_leftpad = np.arange(z_array[0],z_slice[0],slice_len)
+Ne_slice_left   = f_dens(z_leftpad) * slice_len
 
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
