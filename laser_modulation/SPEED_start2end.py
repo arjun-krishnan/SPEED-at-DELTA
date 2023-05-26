@@ -15,12 +15,10 @@ os.chdir(dname)
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as const
-import scipy.io
 from scipy.integrate import simpson
 from scipy import interpolate
 from SPEED_functions import *
 from tqdm import tqdm
-import math
 
 ##### natural constants #####
 c = const.c                       # speed of light
@@ -115,8 +113,8 @@ l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E
 
 elec = define_bunch(E0=e_E,dE=sigma_E,N=5e5,slicelength=100e-6)
 print("\nTracking through the lattice...")
-elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
-z,dE=calc_phasespace(elec_M1,e_E,plot=True)
+elec_M1 = lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
+z , dE = calc_phasespace(elec_M1,e_E,plot=True)
 
 #%%
 plt.figure()
