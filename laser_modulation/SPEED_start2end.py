@@ -124,12 +124,12 @@ plt.plot(wl,b)
 
 wl_h      = 160e-9
 slice_len = 800e-9
-z_slice , b_slice = plot_slice(z, np.array([wl_h]), slice_len)
+z_slice , b_slice = plot_slice(z,[wl_h], slice_len)
 z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2] 
 
 #%% Calculating the temporal power profile of the radiation
 
-beam_cur = 5e-3     # 5 mA
+beam_cur = 8e-3     # 5 mA
 rev_t    = 115.2/c  # revolution time
 bunch_Q  = beam_cur * rev_t
 Ne_bunch = bunch_Q / e_charge
@@ -145,22 +145,23 @@ bunch_dens = Ne_bunch * gaus
 f_dens     = interpolate.interp1d(z_bunch, bunch_dens)
 
 
-Ne_slice   = f_dens(z_slice) * slice_len
-P = b_slice**2 * Ne_slice**2  # * P0 (power emitted from a single electron)
+#Ne_slice   = f_dens(z_slice) * slice_len
+#P = b_slice**2 * Ne_slice**2  # * P0 (power emitted from a single electron)
 
 Ne_bunch_full = f_dens(z_bunch) * slice_len
-bn_incoherent = np.mean(b_slice[0:10])
+bn_incoherent = 1/np.sqrt(Ne_bunch_full)
+#np.mean(b_slice[0:10])
 P_incoherent  = bn_incoherent**2 * Ne_bunch_full**2
 plt.plot(t_bunch * 1e15 , P_incoherent / max(P_incoherent) , '-g' , label = "incoherent" )
 E_incoherent = simpson(P_incoherent, dx = t_slice)
 
 
 N_pad = len(z_bunch) - len(z_slice)
-bn_left , bn_right = bn_incoherent * np.ones(int(N_pad/2)) , bn_incoherent * np.ones(int(N_pad/2))
+bn_left , bn_right = np.zeros(int(N_pad/2)) , np.zeros(int(N_pad/2))
 if N_pad % 2 == 1:
     bn_right = bn_incoherent * np.ones(int(N_pad/2)+1)
-bn_coherent = np.concatenate((bn_left, b_slice , bn_right))
-
+bn_coherent = np.concatenate((bn_left, b_slice - np.mean(b_slice[0:10]) , bn_right)) 
+bn_coherent += bn_incoherent 
 P_coherent  = bn_coherent**2 * Ne_bunch_full**2
 plt.plot(t_bunch * 1e15 , P_coherent / max(P_incoherent) , '-r' , label = "coherent", alpha = 0.8)
 E_coherent = simpson(P_coherent, dx = t_slice)
