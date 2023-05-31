@@ -177,18 +177,18 @@ print("Coherent to incoherent ratio :" , E_coherent/E_incoherent)
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
 
-wl_h = [800e-9/5 , 800e-9/7 , 800e-9/9] 
+wl_h = [800e-9/3 , 800e-9/5 , 800e-9/7 , 800e-9/9] 
 
 elec =  define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength = 20e-6)
 
 C1I = np.linspace(200, 800, 21)
 C2I = np.linspace(200, 800, 21)
 
-wls = [np.linspace(wl_h[0]-5e-9, wl_h[0]+5e-9, 101) , np.linspace(wl_h[1]-5e-9, wl_h[1]+5e-9, 101) , np.linspace(wl_h[2]-5e-9, wl_h[2]+5e-9, 101)]
+#wls = [np.linspace(wl_h[0]-5e-9, wl_h[0]+5e-9, 101) , np.linspace(wl_h[1]-5e-9, wl_h[1]+5e-9, 101) , np.linspace(wl_h[2]-5e-9, wl_h[2]+5e-9, 101)]
 
 bn_map = []
 for C1 in tqdm(C1I):
-    bmax = [[],[],[]]
+    b = [] #[[],[],[]]
     delay_z = Delay_SecondPulse(C1) * 1e-6  
     l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.125,Z_offset=delay_z)
     for C2 in C2I:
@@ -196,16 +196,16 @@ for C1 in tqdm(C1I):
         lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h = 5 , c1= C1 , c2= C2 , plot= 0)
         elec_M1= lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
         z,dE=calc_phasespace(elec_M1,e_E,plot=False)
-        for i in range(3):
-            b = calc_bn(z,wls[i])
-            bmax[i].append(max(b))
+        #for i in range(3):
+        b.append(calc_bn(z,wl_h))
+#        bmax[i].append(max(b))
         
-    bn_map.append(bmax)
+    bn_map.append(b)
 
 bn_map = np.array(bn_map)
-bn_map = np.transpose(bn_map,axes=(1,2,0))
+bn_map = np.transpose(bn_map,axes=(2,1,0))
 
-for i in range(3):
+for i in range(len(wl_h)):
     plt.figure()
     plt.contourf(C1I, C2I,bn_map[i],50)
     plt.colorbar(label="bn")
