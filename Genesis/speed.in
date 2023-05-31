@@ -2,7 +2,7 @@
 rootname=SPEED
 lattice=speed.lat
 beamline=LAT
-lambda0=400e-09
+lambda0=160e-09
 gamma0=2.919E+03
 delz=0.01
 shotnoise=0
@@ -13,20 +13,12 @@ one4one=1
 
 &time
 time=1
-slen=12e-6
+slen=160e-9
 sample=1
 &end
 
-&beam
-betax=10.708539
-alphax=-0.7011887
-betay=6.490464
-alphay=0.6774517
-current=50
-delgam=2.05
-ex=47.000000e-06
-ey=4.700000e-06
-emod= 9.78
+&importbeam
+file= beam_in.par.h5
 &end
 
 &field
@@ -44,6 +36,6 @@ doSpread=1
 &end
 
 &write
-beam= SPEED
+#beam= SPEED
 field= SPEED
 &end
