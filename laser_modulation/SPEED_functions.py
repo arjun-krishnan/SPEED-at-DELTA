@@ -31,6 +31,7 @@ mu0 = const.mu_0                # vacuum permeability
 
 #@jit(parallel = True)
 def calc_bn(tau0, wl, printmax = True):
+    wl = np.asarray(wl)
     bn = []
     for i in range(len(wl)):
         z = np.sum(np.exp(-1j * 2 * np.pi * (tau0 / wl[i])))
