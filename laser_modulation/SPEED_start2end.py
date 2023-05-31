@@ -19,6 +19,7 @@ from scipy.integrate import simpson
 from scipy import interpolate
 from SPEED_functions import *
 from tqdm import tqdm
+import h5py
 
 ##### natural constants #####
 c = const.c                       # speed of light
@@ -129,7 +130,7 @@ z_slice , b_slice = z_slice[1:-2] , b_slice[1:-2]
 
 #%% Calculating the temporal power profile of the radiation
 
-beam_cur = 8e-3     # 5 mA
+beam_cur = 5e-3     # 5 mA
 rev_t    = 115.2/c  # revolution time
 bunch_Q  = beam_cur * rev_t
 Ne_bunch = bunch_Q / e_charge
@@ -176,6 +177,52 @@ print("Integrated power: \n Incoherent \t : ", E_incoherent ,"\n Coherent \t\t :
 print("Coherent to incoherent ratio :" , E_coherent/E_incoherent)
 
 #%%
+########## Exporting a particle distribution file for Genesis #########
+
+elec_genesis = np.copy(elec_M1)
+elec_genesis[2] = elec_genesis[2] - np.mean(elec_genesis[2])
+
+ref_wl= wl_h
+x = elec_genesis[0]
+y = elec_genesis[1]
+px = elec_genesis[3] / m_e / c
+py = elec_genesis[4] / m_e / c
+t = (elec_genesis[2] - min(elec_genesis[2])) / ref_wl * 2*np.pi
+gamma = np.sqrt(m_e**2 * c**4 + elec_genesis[5]**2 * c**2) / m_e / c**2
+
+plt.figure()
+plt.plot(t,gamma,',r')
+
+N_slice = round(max(t)/2/np.pi)
+
+f = h5py.File('beam_in.par.h5', 'w')
+f.create_dataset('beamletsize',data= 1)
+f.create_dataset('one4one',data= 1)
+f.create_dataset('refposition',data= 0.0)
+f.create_dataset('slicecount',data= N_slice)
+f.create_dataset('slicelength',data= ref_wl)
+f.create_dataset('slicespacing',data= ref_wl)
+
+prefix = "slice000"
+for i in range(N_slice):
+    ii = (t >= i*2*np.pi) & (t < (i+1)*2*np.pi)
+    data_n = "{:03n}".format(i+1)
+    N_par = len(gamma[ii])
+    
+    g = f.create_group(prefix+data_n)
+    g.create_dataset('gamma',data= gamma[ii])
+    g.create_dataset('current',data= N_par*e_charge/(ref_wl/c))
+    g.create_dataset('x',data= x[ii])
+    g.create_dataset('y',data= y[ii])
+    g.create_dataset('px',data= px[ii])
+    g.create_dataset('py',data= py[ii])
+    
+    tau = t[ii]- i*2*np.pi
+    g.create_dataset('theta',data= tau)
+
+f.close()
+
+#%%
 ############ Plot a bunching heatmap for different chicane currents ############
 
 wl_h = [800e-9/3 , 800e-9/5 , 800e-9/7 , 800e-9/9] 
@@ -214,6 +261,7 @@ for i in range(len(wl_h)):
     plt.xlabel("Chicane 1 current (A)")
     plt.ylabel("Chicane 2 current (A)")
     
+
 #%%
 ########## Trying out different R56_2 values ###########
 
