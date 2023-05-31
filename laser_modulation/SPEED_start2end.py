@@ -195,7 +195,7 @@ plt.plot(t,gamma,',r')
 
 N_slice = round(max(t)/2/np.pi)
 
-f = h5py.File('beam_in.par.h5', 'w')
+f = h5py.File('../Genesis/beam_in.par.h5', 'w')
 f.create_dataset('beamletsize',data= 1)
 f.create_dataset('one4one',data= 1)
 f.create_dataset('refposition',data= 0.0)

@@ -1,0 +1,49 @@
+&setup
+rootname=SPEED
+lattice=speed.lat
+beamline=LAT
+lambda0=400e-09
+gamma0=2.919E+03
+delz=0.01
+shotnoise=0
+#npart= 1024
+#nbins= 4
+one4one=1
+&end
+
+&time
+time=1
+slen=12e-6
+sample=1
+&end
+
+&beam
+betax=10.708539
+alphax=-0.7011887
+betay=6.490464
+alphay=0.6774517
+current=50
+delgam=2.05
+ex=47.000000e-06
+ey=4.700000e-06
+emod= 9.78
+&end
+
+&field
+&end
+
+&sponrad
+doLoss=1
+doSpread=1
+&end
+
+&track
+&end
+
+&sort
+&end
+
+&write
+beam= SPEED
+field= SPEED
+&end

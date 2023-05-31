@@ -1,0 +1,3 @@
+UND: Undulator = {aw=3.148,nwig=3,lambdau=0.25};
+CHIC: Chicane = {l=0.8,lb=0.1,ld=0.1,delay=14e-6}; 
+LAT: Line = {UND};
