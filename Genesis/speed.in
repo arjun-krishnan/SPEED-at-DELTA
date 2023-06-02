@@ -4,29 +4,30 @@ lattice=speed.lat
 beamline=LAT
 lambda0=160e-09
 gamma0=2.919E+03
-delz=0.01
+delz=0.005
 shotnoise=0
-#npart= 1024
-#nbins= 4
 one4one=1
 &end
 
 &time
-time=1
-slen=160e-9
+time=0
+slen=100e-6
 sample=1
 &end
 
 &importbeam
-file= beam_in.par.h5
-&end
-
-&field
+file = beam_in.par.h5
+time = 1
 &end
 
 &sponrad
 doLoss=1
 doSpread=1
+&end
+
+&field
+lambda = 160e-9
+power = 0
 &end
 
 &track
@@ -36,6 +37,6 @@ doSpread=1
 &end
 
 &write
-#beam= SPEED
+beam= SPEED
 field= SPEED
 &end
