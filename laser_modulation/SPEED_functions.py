@@ -31,7 +31,7 @@ mu0 = const.mu_0                # vacuum permeability
 
 #@jit(parallel = True)
 def calc_bn(tau0, wl, printmax = True):
-    wl = np.asarray(wl)
+    wl = np.asarray(wl).reshape(-1,)
     bn = []
     for i in range(len(wl)):
         z = np.sum(np.exp(-1j * 2 * np.pi * (tau0 / wl[i])))
@@ -55,6 +55,7 @@ def plot_slice(z, wl, slice_len=0, n_slice=40):
         z1, z2 = zz[i - 1], zz[i]
         z_slice.append(np.mean([z1, z2]))
         slice_zz = z[(z >= z1) * (z < z2)]
+        #print(len(slice_zz))
         if len(slice_zz) == 0:
             bn.append(0)
         else:
