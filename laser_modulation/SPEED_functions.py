@@ -152,6 +152,8 @@ class Laser:
         self.pulse_len = pulse_len   # FWHM pulse length in seconds
         self.E = pulse_E         # Pulse energy in joules
         self.P_max = self.E / (0.94 * self.pulse_len)
+        I0 = (2*self.P_max) / (np.pi*4*sigx*sigy)     # Peak intensity
+        self.E0 = np.sqrt(2*Z0*I0)   
         
         self.M2 = M2
         self.k = 2 * np.pi / self.wl                   # Wavenumber in 1/m
@@ -163,10 +165,11 @@ class Laser:
         self.beamsize_x = lambda z: self.sigx * (np.sqrt(1 + z**2 / (self.zRx**2)))   # Horizontal beam size at position z in meters
         self.beamsize_y = lambda z: self.sigy * (np.sqrt(1 + z**2 / (self.zRy**2)))   # Vertical beam size at position z in meters
         
-        self.E0 = 2**-0.25 * np.pi**-0.75 * np.sqrt(Z0 * self.E / (self.sigx * self.sigy * self.sigz / c)) * 1.2   # Factor to make the modulation amplitude equal to elegant simulations
+             
+#        self.E0 = 2**-0.25 * np.pi**-0.75 * np.sqrt(Z0 * self.E / (self.sigx * self.sigy * self.sigz / c)) * 1.2   # Factor to make the modulation amplitude equal to elegant simulations
         
         self.X0 = X0             # X offset
-        self.Z_offset = Z_offset   # Z offset
+        self.Z_offset = Z_offset # Z offset
         self.focus = focus       # Focus parameter
         self.pulsed = pulsed     # Pulsed laser flag
         self.phi = phi           # Spectral phase of the laser
