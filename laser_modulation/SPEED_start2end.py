@@ -49,10 +49,10 @@ l1_fwhm =45e-15  # pulse length
 l1_E = 4e-3      # pulse energy
 
 ##### defining Laser 2 #####
-l2_wl= 400e-9
-l2_sigx= 1e-3
-l2_fwhm=45e-15
-l2_E= 6e-3
+l2_wl = 400e-9
+l2_sigx = 1e-3
+l2_fwhm = 45e-15
+l2_E = 6e-3
 
 # Calculate the delay for the second seed pulse
 p = [ 6.29880952e-04, -8.26071429e-02,  1.10083333e+01]
@@ -64,19 +64,19 @@ delay_z = Delay_SecondPulse(IC1) * 1e-6    # Corresponding R56 value in microns
 ## First calculate energy modualtion amplitude and the optimum chicane currents
 ##### defining the magnetic configuration#####
 
-lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h=5, c1= IC1 , c2= 635, plot= 1)
+lattice = Lattice(E0= 1492, l1= l1_wl+50e-9, l2= l2_wl, h=5, c1= IC1 , c2= 635, plot= 1)
 
-l1= Laser(wl=l1_wl,sigx=1*l1_sigx,sigy=l1_sigx/1,pulse_len=l1_fwhm,pulse_E=l1_E,focus=1.125,M2=1,pulsed=1,phi=0e10)
-l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.125,X0=0.0e-3,Z_offset=delay_z ,M2=1,pulsed=1,phi=0e10)
+l1 = Laser(wl=l1_wl,sigx=1*l1_sigx,sigy=l1_sigx/1,pulse_len=l1_fwhm,pulse_E=l1_E,focus=1.125,M2=1,pulsed=1,phi=0e10)
+l2 = Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.125,X0=0.0e-3,Z_offset=delay_z ,M2=1,pulsed=1,phi=0e10)
 
 #### Test Tracking through Modulators
-elec_test= lsrmod_track(lattice,l1,bunch_test,tstep=tstep,disp_Progress=False)
-z,dE=calc_phasespace(elec_test,e_E,plot=True)
-A11=abs(min(dE))
+elec_test = lsrmod_track(lattice,l1,bunch_test,tstep=tstep,disp_Progress=False)
+z , dE = calc_phasespace(elec_test,e_E,plot=True)
+A11 = abs(min(dE))
 
-elec_test= lsrmod_track(lattice,l2,bunch_test,tstep=tstep,disp_Progress=False)
-z,dE=calc_phasespace(elec_test,e_E,plot=True)
-A22=abs(min(dE))
+elec_test = lsrmod_track(lattice,l2,bunch_test,tstep=tstep,disp_Progress=False)
+z , dE = calc_phasespace(elec_test,e_E,plot=True)
+A22 = abs(min(dE))
 print("A1= ",A11,"\t A2= ",A22)
 
 R56_1_opt , R56_2_opt = calc_R56(A11, A22, m=3)
