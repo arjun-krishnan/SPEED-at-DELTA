@@ -227,20 +227,23 @@ f.close()
 #%%
 ############ Plot a bunching heatmap for different chicane currents ############
 
-wl_h = [800e-9/3 , 800e-9/5 , 800e-9/7 , 800e-9/9] 
+harm = np.arange(3,21,2)
+wl_h = 800e-9 / harm 
+#[800e-9/3 , 800e-9/5 , 800e-9/7 , 800e-9/9, 800e-9/11, 800e-9/13] 
 
 elec =  define_bunch(E0=e_E,dE=sigma_E,N=1e4,slicelength = 20e-6)
 
-C1I = np.linspace(200, 800, 21)
-C2I = np.linspace(200, 800, 21)
+C1I = np.linspace(200, 800, 15)
+C2I = np.linspace(200, 800, 15)
 
 #wls = [np.linspace(wl_h[0]-5e-9, wl_h[0]+5e-9, 101) , np.linspace(wl_h[1]-5e-9, wl_h[1]+5e-9, 101) , np.linspace(wl_h[2]-5e-9, wl_h[2]+5e-9, 101)]
+l1 = Laser(wl=l1_wl,sigx=1*l1_sigx,sigy=l1_sigx/1,pulse_len=l1_fwhm,pulse_E=l1_E,focus=1.125,M2=1,pulsed=False,phi=0e10)
 
 bn_map = []
 for C1 in tqdm(C1I):
     b = [] #[[],[],[]]
     delay_z = Delay_SecondPulse(C1) * 1e-6  
-    l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.125,Z_offset=delay_z)
+    l2= Laser(wl=l2_wl,sigx=1*l2_sigx,sigy=1*l2_sigx,pulse_len=l2_fwhm,pulse_E=l2_E,focus=3.125,Z_offset=delay_z, pulsed=False)
     for C2 in C2I:
         print("C1 : ", C1, " C2 : ", C2)
         lattice = Lattice(E0= 1492, l1= l1_wl, l2= l2_wl, h = 5 , c1= C1 , c2= C2 , plot= 0)
