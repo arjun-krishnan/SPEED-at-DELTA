@@ -20,7 +20,33 @@ Z0 = 376.73                     # impedance of free space in Ohm
 epsilon_0 = const.epsilon_0     # vacuum permittivity
 mu0 = const.mu_0                # vacuum permeability
 
-def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_track=False, disp_Progress=True):
+
+def rotate_particles(p, angle):
+    # Reference particle (last column)
+    reference_particle = p[:, -1]
+
+    # Translate particles to make reference particle the origin
+    translated_p = p - reference_particle[:, np.newaxis]
+
+    # Rotation matrix for rotating around the y-axis by angle alpha
+    R_y = np.array([
+        [np.cos(angle), 0, np.sin(angle)],
+        [0, 1, 0],
+        [-np.sin(angle), 0, np.cos(angle)]
+    ])
+
+    # Apply the rotation
+    rotated_p = np.dot(R_y, translated_p)
+
+    # Translate back to the original position
+    # rotated_p += reference_particle[:, np.newaxis]
+
+    return rotated_p
+
+
+def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_track=False, disp_Progress=True,
+                 get_R512=True, R51_dx=4e-4, R52_dxp=4e-5):
+
     N_e = len(e_bunch[0])
     bunch = np.copy(e_bunch)
     z_0 = np.mean(bunch[2])
@@ -33,11 +59,11 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
 
     starttime = time()
     EE = []
-    track_x = []
-    track_z = []
-    dZZ = []
-    ZZ = []
-    
+    track_x = [np.copy(bunch[0][-6:])]
+    track_z = [np.copy(bunch[2][-6:])]
+
+    R51, R52 = [0.0], [0.0]
+
     if zlim == None:
         zlim = Mod.len
     
@@ -52,11 +78,10 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
     
         z = np.copy(bunch[2])
         z_mean = np.mean(z)
-        ZZ.append(z_mean)
         
-        Efield_x_vec = Lsr.E_field(bunch[0],bunch[1],bunch[2],t)
+        Efield_x_vec = Lsr.E_field(bunch[0], bunch[1], bunch[2], t)
         if Lsr2 != None: 
-            Efield_x_vec += Lsr2.E_field(bunch[0],bunch[1],bunch[2],t)
+            Efield_x_vec += Lsr2.E_field(bunch[0], bunch[1], bunch[2],t)
         EE.append(Efield_x_vec[0])
 
         try:
@@ -67,14 +92,23 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
         p_field = bunch[3:]
         p_vec = np.sqrt(np.sum(p_field**2, axis=0))
         gamma_vec = np.sqrt((p_vec / m_e / c) ** 2 + 1)
+
         dp_x_vec = (Efield_x_vec - p_field[2] * Bfield_y_vec / m_e / gamma_vec) * e_charge * tstep
         dp_y_vec = np.zeros(N_e)
-        dp_z_vec = p_field[0] * Bfield_y_vec / m_e / gamma_vec * e_charge * tstep   
+        dp_z_vec = p_field[0] * Bfield_y_vec / m_e / gamma_vec * e_charge * tstep
+
         p_new = bunch[3:] + [dp_x_vec , dp_y_vec , dp_z_vec]
         p_vec_new = np.sqrt(np.sum(p_new**2 , axis=0))
         gamma_vec_new = np.sqrt((p_vec_new / m_e / c)**2 + 1)    
                        
-        spatial_new = bunch[0:3,:] + p_new / m_e / gamma_vec_new * tstep       
+        spatial_new = bunch[0:3,:] + p_new / m_e / gamma_vec_new * tstep
+
+        comoving_angle = p_new[0, -1] / p_new[2, -1]
+        rotated_pos = rotate_particles(spatial_new, -comoving_angle)
+
+        R51.append((rotated_pos[2, -6] - rotated_pos[2, -5]) / R51_dx)
+        R52.append((rotated_pos[2, -4] - rotated_pos[2, -3]) / R52_dxp)
+
         bunch[0:3] = np.copy(spatial_new)
         bunch[3:] = np.copy(p_new)
         
@@ -82,21 +116,21 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
         
         track_x.append(np.copy(bunch[0][-6:]))
         track_z.append(np.copy(bunch[2][-6:]))
-        
-        dz = (t * c - np.mean(bunch[2]))
-        dZZ.append(dz)
-  
 
     if disp_Progress:
             print('Progress: '+str(progress)+'/'+str(progressrate))
+
+    endtime = time()
+    print("\nRuntime:  " , np.round(endtime-starttime,2) , " sec")
 
     if plot_track == True:
         track_x = np.array(track_x)
         track_z = np.array(track_z)
         return(bunch,track_x,track_z)
-    
-    endtime = time()
-    print("\nRuntime:  " , np.round(endtime-starttime,2) , " sec")
+
+    if get_R512 == True:
+        return bunch, np.array(R51), np.array(R52), np.array(track_z)[:, -1]
+
     return bunch  
         
 def chicane_track(bunch_in, R56, R51=0, R52=0, isr=False):
