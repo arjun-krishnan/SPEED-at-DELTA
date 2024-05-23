@@ -5,17 +5,9 @@ Created on Wed Feb 14 11:15:23 2024
 @author: arjun
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy.constants as const
-from scipy.integrate import simpson
-from scipy import interpolate
 from define_laser_lattice import *
-from tracking_functions import *
 from phase_space_manipulation import *
-from tqdm import tqdm
-import h5py
-from glob import glob
+from tracking_functions import *
 
 ##### natural constants #####
 c = const.c                       # speed of light
@@ -36,7 +28,6 @@ N_e = int(5e4)          # number of electrons
 
 bunch_test = define_bunch(Test=True,E0=e_E)
 bunch_init = define_bunch(Test=False,E0=e_E,dE=sigma_E,N=N_e,slicelength=slicelength)
-elec = np.copy(bunch_init)
 
 ##### defining Laser 1 #####
 l1_wl = 400e-9   # wavelength of the laser
@@ -63,10 +54,10 @@ delay_z = Delay_SecondPulse(IC1) * 1e-6    # Corresponding R56 value in microns
 ##### defining the magnetic configuration#####
 
 #lattice = Lattice(filename='fieldfiles/M2_400_C2_300_R_200/M2_400_C2_300_R_200_R52mod_35A_input.txt', plot= 1)
-lattice = Lattice(filename='U250.LTT', plot= 1)
+lattice = Lattice(filename='input_files/U250.LTT', plot= 1)
 
-l1 = Laser("Laser1.LSR")
-l2 = Laser("Laser2.LSR")
+l1 = Laser("input_files/Laser1.LSR")
+l2 = Laser("input_files/Laser2.LSR")
 
 #%%
 elec_test , track_x, track_z = lsrmod_track(lattice,l2,bunch_test,tstep=tstep,zlim=6,disp_Progress=False,plot_track=True)
@@ -83,7 +74,7 @@ print("R52 :" , (R52_l[2910] - R52_l[2320])*1e6)
 
 elec = define_bunch(E0=e_E,dE=sigma_E,N=5e4,slicelength=10e-6)
 print("\nTracking through the lattice...")
-elec_M1 = lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep)
+elec_M1 = lsrmod_track(lattice,l1,elec,Lsr2=l2,tstep=tstep,get_R512=False)
 z , dE = calc_phasespace(elec_M1,e_E,plot=True)
 
 #%%
@@ -91,4 +82,4 @@ plt.figure()
 wl = np.linspace(20e-9,250e-9,1001)
 b = calc_bn(z,wl)                     #calculating bunching factor
 plt.plot(wl,b)
-
+plt.show()
