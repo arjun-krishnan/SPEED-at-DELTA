@@ -15,8 +15,10 @@ from scipy import interpolate,special
 import matplotlib.pyplot as plt
 from time import time
 #from  numba import jit
-import pathlib
+from pathlib import Path
 import sys
+import h5py
+from scipy.interpolate import RegularGridInterpolator
 #import sdds
 
 
@@ -71,7 +73,7 @@ def plot_slice(z, wl, slice_len=0, n_slice=40):
     
 def write_results(bunch,file_path):
     print("Writing to "+file_path+" ...")
-    file = pathlib.Path(file_path)
+    file = Path(file_path)
     if file.is_file():
         ch = input("The file already exist! Overwrite? (Y/N)")
         if ch == 'y':
@@ -80,7 +82,7 @@ def write_results(bunch,file_path):
         bunch.to_csv(file_path)
         
 
-def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R56_dE=0.0007):
+def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R56_dE=0.0007,R51_dx=4e-4,R52_dxp=4e-5):
     N_e = int(N) # number of electrons
     
     ##### electron parameter #####
@@ -97,14 +99,14 @@ def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R
     Dxprime = -4.3065e-9 
     
     if(Test):
-        slicelength = 60e-6 
+        slicelength = 8e-6 
         N_e = int(1e4)
         energyspread = 0e-4
         emitX = 0
         emitY = 0  
         Dx = 0
         Dxprime = 0
-        
+    print(slicelength)    
     CS_inv_x = np.abs(np.random.normal(loc=0,scale=emitX*np.sqrt(2*np.pi),size=N_e))
     CS_inv_y = np.abs(np.random.normal(loc=0,scale=emitY*np.sqrt(2*np.pi),size=N_e))
     phase_x = np.random.rand(N_e)*2*np.pi
@@ -119,13 +121,22 @@ def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R
     elec0[2] = np.sqrt(CS_inv_y * betaY) * np.cos(phase_y)
     elec0[3] = -np.sqrt(CS_inv_y / betaY) * (alphaY * np.cos(phase_y) + np.sin(phase_y))
     
+    
     # Adding two particles with only energy difference to calculate the R56
     for i in range(6):
         if i == 5:
-            elec0[i][-2] , elec0[i][-1] = 0, R56_dE
+            elec0[i][-2] , elec0[i][-1] = 0.0, R56_dE
         else:
-            elec0[i][-2] , elec0[i][-1] = 0, 0.0
-            
+            elec0[i][-2] , elec0[i][-1] = 0.0, 0.0
+        if i == 1:
+            elec0[i][-4] , elec0[i][-3] = 0.0, R52_dxp
+        else:
+            elec0[i][-4] , elec0[i][-3] = 0.0, 0.0
+        if i == 0:
+            elec0[i][-6] , elec0[i][-5] = 0.0, R51_dx
+        else:
+            elec0[i][-6] , elec0[i][-5] = 0.0, 0.0
+        
     #changing to parameter style: [x,y,z,px,py,pz] in laboratory frame
     elec = coord_change(elec0,e_E)
     np.save("e_dist.npy",elec)
@@ -192,7 +203,9 @@ class Laser:
         return central_E_field * offaxis_pulsed_factor * phase
         
 class Lattice:
-    def __init__(self, E0= 1492,l1= 800e-9, l2= 400e-9, h= 4, c1= 800, c2= 800, filename = None, plot = True):
+    def __init__(self, E0= 1492,l1= 800e-9, l2= 400e-9, h= 4, c1= 800, c2= 800, filename = None, is2d=True, plot = True):
+        
+        self.is2d = is2d
         self.len = 5.74925
         windings = 48 # upper plus lower coil
         gap = 0.05 
@@ -205,16 +218,29 @@ class Lattice:
         e_gamma = E0/0.511
         
         if filename != None:
+            
             df = pd.read_csv(filename,sep='\t')
             self.l = np.array(df['z']) / 1000 
             self.b = np.array(df['By']) 
-            self.len = self.l[-1]        
-            self.B_func = interpolate.interp1d(self.l,self.b)
+            self.len = self.l[-1] 
+            
+            if is2d:
+                
+                df = pd.read_csv("fieldfiles/M2_279A_transverse_field.txt",skiprows=3,header=None,sep='\t')
+                x1 = np.array(df[0], dtype='float32')
+                B1 = np.array(df[1], dtype='float32')
+                B_norm = (B1/B1[300]).reshape(-1,1)
+                B_2D = B_norm * self.b
+                self.B_func = RegularGridInterpolator((x1, self.l), B_2D, method='linear', bounds_error=False, fill_value=0)
+            
+            else:
+                self.B_func = interpolate.interp1d(self.l,self.b)
+                
             if plot == True:
                 plt.plot(self.l,self.b)
             return
-            
-        if l1 == 0:
+        
+        if l1 == 0:   
             IM1 = 0
         else:
             laser_wl = l1
@@ -304,10 +330,35 @@ def calc_phasespace(bunch,e_E,plot=False):
     return(z,dEE)    
 
 
+def rotate_particles(p, angle):
+    # Reference particle (last column)
+    reference_particle = p[:, -1]
+    
+    # Translate particles to make reference particle the origin
+    translated_p = p - reference_particle[:, np.newaxis]
+    
+    # Rotation matrix for rotating around the y-axis by angle alpha
+    R_y = np.array([
+        [np.cos(angle), 0, np.sin(angle)],
+        [0, 1, 0],
+        [-np.sin(angle), 0, np.cos(angle)]
+    ])
+    
+    # Apply the rotation
+    rotated_p = np.dot(R_y, translated_p)
+    
+    # Translate back to the original position
+    #rotated_p += reference_particle[:, np.newaxis]
+    
+    return rotated_p
 
 
     
-def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_track=False, disp_Progress=True):
+def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, 
+                 plot_track=False, disp_Progress=True, 
+                 get_R512=True, R51_dx=4e-4, R52_dxp=4e-5):
+    
+
     N_e = len(e_bunch[0])
     bunch = np.copy(e_bunch)
     z_0 = np.mean(bunch[2])
@@ -322,10 +373,12 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
 
     starttime = time()
     EE = []
-    track_x = [[], []]
-    track_z = [[], []]
-    dZZ = []
-    ZZ = []
+    track_x = [np.copy(bunch[0][-6:])]
+    track_z = [np.copy(bunch[2][-6:])]
+  #  dZZ = []
+  #  ZZ = []
+    
+    R51, R52 = [0.0], [0.0]
     
     if zlim == None:
         zlim = Mod.len
@@ -340,7 +393,7 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
     
         z = np.copy(bunch[2])
         z_mean = np.mean(z)
-        ZZ.append(z_mean)
+    #    ZZ.append(z_mean)
     
         p_field = bunch[3:]
         p_vec = np.sqrt(np.sum(p_field**2, axis=0))
@@ -352,7 +405,11 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
         EE.append(Efield_x_vec[0])
 
         try:
-            Bfield_y_vec = Mod.B_func(z) + Efield_x_vec / c
+            if Mod.is2d:
+                pos = np.array([bunch[0], bunch[2]]).T
+                Bfield_y_vec = Mod.B_func(pos) + Efield_x_vec / c
+            else:    
+                Bfield_y_vec = Mod.B_func(z) + Efield_x_vec / c
         except:
             Bfield_y_vec = Efield_x_vec / c
     
@@ -366,29 +423,42 @@ def lsrmod_track(Mod, Lsr, e_bunch, Lsr2=None, tstep=1e-12, zlim=None, plot_trac
         gamma_vec_new = np.sqrt((p_vec_new / m_e / c)**2 + 1)                           
         spatial_new = bunch[0:3,:] + p_new / m_e / gamma_vec_new * tstep   
     
+        comoving_angle = p_new[0, -1] / p_new[2, -1]
+        rotated_pos = rotate_particles(spatial_new, -comoving_angle)
+        
+        R51.append((rotated_pos[2,-6] - rotated_pos[2,-5]) / R51_dx)
+        R52.append((rotated_pos[2,-4] - rotated_pos[2,-3]) / R52_dxp)
+        
         bunch[0:3] = np.copy(spatial_new)
         bunch[3:] = np.copy(p_new)
         
         t += tstep
-        count += 1
-        track_x[0].append(bunch[0][-2])
-        track_z[0].append(bunch[2][-2])
-        track_x[1].append(bunch[0][-1])
-        track_z[1].append(bunch[2][-1])
         
-        dz = (t * c - np.mean(bunch[2]))
-        dZZ.append(dz)
+        track_x.append(np.copy(bunch[0][-6:]))
+        track_z.append(np.copy(bunch[2][-6:]))
+        #track_x[0].append(bunch[0][-2])
+        #track_z[0].append(bunch[2][-2])
+        #track_x[1].append(bunch[0][-1])
+        #track_z[1].append(bunch[2][-1])
+        
+   #     dz = (t * c - np.mean(bunch[2]))
+  #      dZZ.append(dz)
   
     else:
         if disp_Progress:
             print('Progress: '+str(progress)+'/'+str(progressrate))
 
     if plot_track == True:
+        track_x = np.array(track_x)
+        track_z = np.array(track_z)
         return(bunch,track_x,track_z)
+    
+    if get_R512 == True:
+        return bunch, np.array(R51), np.array(R52), np.array(track_z)[:,-1], np.array(track_x)[:,-1]
     
     endtime = time()
     print("\nRuntime:  " , np.round(endtime-starttime,2) , " sec")
-    return bunch  
+    return bunch
         
 def chicane_track(bunch_in, R56, R51=0, R52=0, isr=False):
     RM = pd.read_csv("TM.txt", usecols=range(1, 7))
@@ -444,5 +514,49 @@ def calc_R56(A11, A22, dE=7e-4, K=2, m=21, n=-1, wl=800e-9):
         elec2[5]+=SR_dE
     elec2[5]=(elec2[5]+1)*e_E/m_e/c**2
     #return(elec2)
+
+
+import h5py
+from scipy.interpolate import RegularGridInterpolator
+
+file = h5py.File("Mod2_400_Rad_133_B-Field_10.h5",'r')
+Bf = np.array(file['/B-Field'])
+pos = np.array(file['/Position'])
+Bf = Bf.view('<f4').reshape(-1, 3)
+pos = pos.view('<f8').reshape(-1, 3)
+
+x = np.unique(pos[:, 0])
+y = np.unique(pos[:, 1])
+
+Bx = Bf[:, 0].reshape((len(y), len(x)))
+By = Bf[:, 1].reshape((len(y), len(x)))
+Bz = Bf[:, 2].reshape((len(y), len(x)))
+
+Bz_interp = RegularGridInterpolator((x, y), Bz.T, bounds_error=False, fill_value=None)
+sample_pos = np.array([np.linspace(-2000, 2000, 1000), np.zeros(1000)]).T
+
+B_test = Bz_interp(sample_pos)
+plt.plot(B_test)
+
+            if Path(filename).suffix in ['.csv', '.txt']:
+                self.is2d = False
+                df = pd.read_csv(filename,sep='\t')
+                self.l = np.array(df['z']) / 1000 
+                self.b = np.array(df['By']) 
+                self.len = self.l[-1]   
+                
+                elif Path(filename).suffix == '.h5':
+                    with h5py.File(filename) as f:
+                        self.is2d = True
+                        x = np.array(f['x']) / 1000
+                        self.l = np.array(f['z']) / 1000
+                        self.b = np.array(f['By']) 
+                        self.len = self.l[-1]
+                        self.B_func = RegularGridInterpolator((x, self.l), self.b, method='linear', bounds_error=False, fill_value=0)
+                        if plot == True:
+                            plt.plot(self.l,self.b[np.where(x==0)[0][0]])
+                        return
+            
+                
 '''
 
