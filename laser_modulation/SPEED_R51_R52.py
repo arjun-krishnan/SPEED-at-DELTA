@@ -147,14 +147,14 @@ plt.grid()
 
 #%%
 
-plt.figure()
-plt.plot(IA, R52_modlist_1)
-plt.xlabel("additional current for coils 11 and 16 (A)")
-plt.ylabel("R52 difference between M1 and M2 ($\mu m$)")
-R52_zero = np.polyfit(R52_modlist_1, IA,deg=1)[1]
-plt.title("R52 = 0 at "+str(np.round(R52_zero,2))+" A", loc='right')
-plt.title("M1_800_C1_450_M2_400_C2_500_R_200", loc='left',fontsize=10)
-plt.grid()
+# plt.figure()
+# plt.plot(IA, R52_modlist_1)
+# plt.xlabel("additional current for coils 11 and 16 (A)")
+# plt.ylabel("R52 difference between M1 and M2 ($\mu m$)")
+# R52_zero = np.polyfit(R52_modlist_1, IA,deg=1)[1]
+# plt.title("R52 = 0 at "+str(np.round(R52_zero,2))+" A", loc='right')
+# plt.title("M1_800_C1_450_M2_400_C2_500_R_200", loc='left',fontsize=10)
+# plt.grid()
 
 #%% Simulating the energy modulation amplitude for each U250 setup for different horizontal position of laser waist
 
