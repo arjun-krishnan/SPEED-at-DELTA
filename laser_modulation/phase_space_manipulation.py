@@ -20,17 +20,30 @@ def define_bunch(Test=False, N=1e4, slicelength=8e-6, E0=1.492e9*e_charge, dE=7e
     
     ##### electron parameter #####
     e_E = E0   # electron energy in J
-    energyspread = dE 
-       
-    alphaX = 8.811383e-01 #1.8348
-    alphaY = 8.972460e-01 #0.1999
-    betaX = 13.546
-    betaY = 13.401
-    emitX = 1.6e-8
-    emitY = 1.6e-9   
-    Dx    = 0.0894
-    Dxprime = -4.3065e-9 
-    
+    energyspread = dE
+
+    ''' These values are suitable for the big EEHG lattice
+        alphaX = 8.811383e-01 #1.8348
+        alphaY = 8.972460e-01 #0.1999
+        betaX = 13.546
+        betaY = 13.401
+        emitX = 1.6e-8
+        emitY = 1.6e-9   
+        Dx    = 0.0894
+        Dxprime = -4.3065e-9 
+        '''
+
+    # The lattice parameters at the beginning of U250
+
+    alphaX=1.92938
+    alphaY=0.210161
+    betaX=6.69295
+    betaY=13.5857
+    Dx=-0.0894
+    Dxprime=-4.3065e-9
+    emitX=1.6e-8
+    emitY=1.6e-9
+
     if(Test):
         #slicelength = 4e-6 
         N_e = int(1e4)
