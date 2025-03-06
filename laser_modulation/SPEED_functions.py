@@ -80,38 +80,67 @@ def write_results(bunch,file_path):
             bunch.to_csv(file_path)
     else:
         bunch.to_csv(file_path)
-        
 
-def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R56_dE=0.0007,R51_dx=4e-4,R52_dxp=4e-5):
-    N_e = int(N) # number of electrons
-    
+
+def define_bunch(Test=False, N=1e4, slicelength=8e-6, E0=1.492e9 * e_charge, dE=7e-4, lattice='del008', R56_dE=0.0007,
+                 R51_dx=4e-4, R52_dxp=4e-5):
+    N_e = int(N)  # number of electrons
+
     ##### electron parameter #####
-    e_E = E0   # electron energy in J
-    energyspread = dE 
-       
-    alphaX = 8.811383e-01 #1.8348
-    alphaY = 8.972460e-01 #0.1999
-    betaX = 13.546
-    betaY = 13.401
-    emitX = 1.6e-8
-    emitY = 1.6e-9   
-    Dx    = 0.0894
-    Dxprime = -4.3065e-9 
-    
-    if(Test):
-        slicelength = 8e-6 
+    e_E = E0  # electron energy in J
+    energyspread = dE
+
+    if lattice == 'eehg':
+        # These values are suitable for the big EEHG lattice
+        alphaX = 8.811383e-01  # 1.8348
+        alphaY = 8.972460e-01  # 0.1999
+        betaX = 13.546
+        betaY = 13.401
+        emitX = 1.6e-8
+        emitY = 1.6e-9
+        Dx = 0.0894
+        Dxprime = -4.3065e-9
+
+    elif lattice == 'del008':
+        # The lattice parameters at the beginning of U250 del008 model
+        alphaX = 1.92938
+        alphaY = 0.210161
+        betaX = 6.69295
+        betaY = 13.5857
+        Dx = -0.0894
+        Dxprime = -4.3065e-9
+        emitX = 1.6e-8
+        emitY = 1.6e-9
+
+    elif lattice == 'del21':
+        # The lattice parameters at the beginning of U250 del21 model
+        alphaX = 1.18911
+        alphaY = 0.260189
+        betaX = 5.378
+        betaY = 11.4688
+        Dx = 0.00377785
+        Dxprime = -0.00714072
+        emitX = 1.6e-8
+        emitY = 1.6e-9
+
+    else:
+        print("Unknown input for lattice! Please check!")
+
+    if (Test):
+        slicelength = 8e-6
         N_e = int(1e4)
         energyspread = 0e-4
         emitX = 0
-        emitY = 0  
+        emitY = 0
         Dx = 0
         Dxprime = 0
-    print(slicelength)    
-    CS_inv_x = np.abs(np.random.normal(loc=0,scale=emitX*np.sqrt(2*np.pi),size=N_e))
-    CS_inv_y = np.abs(np.random.normal(loc=0,scale=emitY*np.sqrt(2*np.pi),size=N_e))
-    phase_x = np.random.rand(N_e)*2*np.pi
-    phase_y = np.random.rand(N_e)*2*np.pi
-    
+
+    # print(slicelength)
+    CS_inv_x = np.abs(np.random.normal(loc=0, scale=emitX * np.sqrt(2 * np.pi), size=N_e))
+    CS_inv_y = np.abs(np.random.normal(loc=0, scale=emitY * np.sqrt(2 * np.pi), size=N_e))
+    phase_x = np.random.rand(N_e) * 2 * np.pi
+    phase_y = np.random.rand(N_e) * 2 * np.pi
+
     # generate random electron parameters according to beam parameters
     elec0 = np.zeros((6, N_e))
     elec0[4] = (np.random.rand(1, N_e) - 0.5) * slicelength  # / c
@@ -120,27 +149,27 @@ def define_bunch(Test=False,N=1e4,slicelength=8e-6,E0=1.492e9*e_charge,dE=7e-4,R
     elec0[1] = -np.sqrt(CS_inv_x / betaX) * (alphaX * np.cos(phase_x) + np.sin(phase_x)) + elec0[5, :] * Dxprime
     elec0[2] = np.sqrt(CS_inv_y * betaY) * np.cos(phase_y)
     elec0[3] = -np.sqrt(CS_inv_y / betaY) * (alphaY * np.cos(phase_y) + np.sin(phase_y))
-    
-    
+
     # Adding two particles with only energy difference to calculate the R56
     for i in range(6):
         if i == 5:
-            elec0[i][-2] , elec0[i][-1] = 0.0, R56_dE
+            elec0[i][-2], elec0[i][-1] = 0.0, R56_dE
         else:
-            elec0[i][-2] , elec0[i][-1] = 0.0, 0.0
+            elec0[i][-2], elec0[i][-1] = 0.0, 0.0
         if i == 1:
-            elec0[i][-4] , elec0[i][-3] = 0.0, R52_dxp
+            elec0[i][-4], elec0[i][-3] = 0.0, R52_dxp
         else:
-            elec0[i][-4] , elec0[i][-3] = 0.0, 0.0
+            elec0[i][-4], elec0[i][-3] = 0.0, 0.0
         if i == 0:
-            elec0[i][-6] , elec0[i][-5] = 0.0, R51_dx
+            elec0[i][-6], elec0[i][-5] = 0.0, R51_dx
         else:
-            elec0[i][-6] , elec0[i][-5] = 0.0, 0.0
-        
-    #changing to parameter style: [x,y,z,px,py,pz] in laboratory frame
-    elec = coord_change(elec0,e_E)
-    np.save("e_dist.npy",elec)
-    return(elec)
+            elec0[i][-6], elec0[i][-5] = 0.0, 0.0
+
+    # changing to parameter style: [x,y,z,px,py,pz] in laboratory frame
+    elec = coord_change(elec0, e_E)
+    np.save("e_dist.npy", elec)
+    return (elec)
+
 
 def coord_change(elec_dummy,e_E):
     elec = np.zeros((6,len(elec_dummy[0])))
@@ -156,51 +185,115 @@ def coord_change(elec_dummy,e_E):
     
 
 class Laser:
-    def __init__(self,wl,sigx,sigy,pulse_len,pulse_E,focus,X0=0.0,Z_offset=0,M2=1.0,pulsed=True,phi=0):
-        self.wl = wl             # Wavelength in meters
-        self.sigx = sigx         # Sigma width of horizontal focus in meters
-        self.sigy = sigy         # Sigma width of vertical focus in meters
-        self.pulse_len = pulse_len   # FWHM pulse length in seconds
-        self.E = pulse_E         # Pulse energy in joules
+    def __init__(self, wl, sigx, sigy, pulse_len, pulse_E, focus, X0=0.0, Z_offset=0, M2=1.0, pulsed=True, D2=0, D3=0):
+        self.wl = wl  # Wavelength (m)
+        self.sigx = sigx  # Horizontal beam width (m)
+        self.sigy = sigy  # Vertical beam width (m)
+        self.pulse_len = pulse_len  # FWHM pulse duration (s)
+        self.E = pulse_E  # Pulse energy (J)
         self.P_max = self.E / (0.94 * self.pulse_len)
-        I0 = (2*self.P_max) / (np.pi*4*sigx*sigy)     # Peak intensity
-        self.E0 = np.sqrt(2*Z0*I0)   
-        
+        I0 = (2 * self.P_max) / (np.pi * 4 * sigx * sigy)  # Peak intensity
+        self.E0 = np.sqrt(2 * Z0 * I0)  # Peak electric field
+
         self.M2 = M2
-        self.k = 2 * np.pi / self.wl                   # Wavenumber in 1/m
-        self.omega = 2 * np.pi * c / self.wl           # Angular frequency in rad/s
-        self.sigz = np.sqrt(2) * self.pulse_len * c / 2.3548   # Sigma width of pulse length in meters
-        self.zRx = np.pi * (2 * self.sigx)**2 / (self.M2 * self.wl)   # Horizontal Rayleigh length in meters
-        self.zRy = np.pi * (2 * self.sigy)**2 / (self.M2 * self.wl)   # Vertical Rayleigh length in meters
-        
-        self.beamsize_x = lambda z: self.sigx * (np.sqrt(1 + z**2 / (self.zRx**2)))   # Horizontal beam size at position z in meters
-        self.beamsize_y = lambda z: self.sigy * (np.sqrt(1 + z**2 / (self.zRy**2)))   # Vertical beam size at position z in meters
-        
-             
-#        self.E0 = 2**-0.25 * np.pi**-0.75 * np.sqrt(Z0 * self.E / (self.sigx * self.sigy * self.sigz / c)) * 1.2   # Factor to make the modulation amplitude equal to elegant simulations
-        
-        self.X0 = X0             # X offset
-        self.Z_offset = Z_offset # Z offset
-        self.focus = focus       # Focus parameter
-        self.pulsed = pulsed     # Pulsed laser flag
-        self.phi = phi           # Spectral phase of the laser
-        
-    def E_field(self,X,Y,Z,T):
-        Zdif_x = Z - self.focus                   # Distance of electron to focus (mod1_center)
+        self.k = 2 * np.pi / self.wl  # Wavenumber (1/m)
+        self.omega0 = 2 * np.pi * c / self.wl  # Central angular frequency (rad/s)
+        self.sigz = np.sqrt(2) * self.pulse_len * c / 2.3548  # Longitudinal sigma (m)
+        self.zRx = np.pi * (2 * self.sigx) ** 2 / (self.M2 * self.wl)  # Rayleigh length (x)
+        self.zRy = np.pi * (2 * self.sigy) ** 2 / (self.M2 * self.wl)  # Rayleigh length (y)
+
+        self.beamsize_x = lambda z: self.sigx * np.sqrt(1 + (z / self.zRx) ** 2)
+        self.beamsize_y = lambda z: self.sigy * np.sqrt(1 + (z / self.zRy) ** 2)
+
+        self.X0 = X0  # X offset
+        self.Z_offset = Z_offset  # Z offset
+        self.focus = focus  # Focus position
+        self.pulsed = pulsed  # Pulsed flag
+
+        # Spectral phase parameters
+        self.D2 = D2  # GDD (s²)
+        self.D3 = D3  # TOD (s³)
+
+        # Precompute dispersed temporal profile
+        self.t_array, self.E_temporal = self.precompute_temporal_profile()
+
+    def precompute_temporal_profile(self):
+        # Convert FWHM pulse duration to Gaussian sigma
+        sigma_t = self.pulse_len / (2 * np.sqrt(2 * np.log(2)))
+
+        # Adjust time window to account for dispersion-induced broadening
+        if self.D2 != 0 or self.D3 != 0:
+            # Estimate broadening from GDD (quadratic in D2)
+            sigma_t_broadened = np.sqrt(sigma_t ** 2 + (self.D2 / (2 * sigma_t)) ** 2)
+            time_window = 16 * sigma_t_broadened  # Expanded window
+        else:
+            time_window = 12 * sigma_t  # Default for transform-limited
+
+        # Use sufficient points to resolve phase variations
+        Nt = 16384  # Increased to 16384 points for better frequency resolution
+        t = np.linspace(-time_window / 2, time_window / 2, Nt)
+        dt = t[1] - t[0]
+
+        # Initial Gaussian envelope (without carrier)
+        envelope = np.exp(-t ** 2 / (2 * sigma_t ** 2))
+        # Analytic signal with carrier frequency
+        E_time = envelope * np.exp(1j * self.omega0 * t)
+
+        # FFT to frequency domain
+        E_freq = np.fft.fftshift(np.fft.fft(E_time))
+        omega = 2 * np.pi * np.fft.fftshift(np.fft.fftfreq(Nt, dt))
+
+        # Spectral phase terms (expand around central frequency)
+        delta_omega = omega - self.omega0
+        phase = (
+                + 0.5 * self.D2 * delta_omega ** 2
+                + (1 / 6) * self.D3 * delta_omega ** 3
+        )
+
+        # Apply phase and inverse FFT
+        E_freq_phased = E_freq * np.exp(-1j * phase)
+        E_time_phased = np.fft.ifft(np.fft.ifftshift(E_freq_phased))
+
+        # Normalize to preserve energy (not peak amplitude)
+        original_energy = np.sum(np.abs(E_time) ** 2) * dt
+        new_energy = np.sum(np.abs(E_time_phased) ** 2) * dt
+        E_temporal = np.real(E_time_phased) * np.sqrt(original_energy / new_energy)
+
+        return t, E_temporal
+
+    def E_field(self, X, Y, Z, T):
+        Zdif_x = Z - self.focus
         Zdif_y = Z - self.focus
         X = X - self.X0
-        Zlas = c * T - self.Z_offset              # Position of the laser pulse center
-        R_x = Zdif_x * (1 + (self.zRx / Zdif_x)**2)
-        R_y = Zdif_y * (1 + (self.zRy / Zdif_y)**2)
+
+        # Beam curvature
+        R_x = Zdif_x * (1 + (self.zRx / Zdif_x) ** 2)  # if Zdif_x != 0 else np.inf
+        R_y = Zdif_y * (1 + (self.zRy / Zdif_y) ** 2)  # if Zdif_y != 0 else np.inf
+
+        # Spatial envelope
         central_E_field = self.E0 * self.sigx / self.beamsize_x(Zdif_x)
-        
-        if self.pulsed:
-            offaxis_pulsed_factor = np.exp(-(Y / self.beamsize_y(Zdif_y))**2 - (X / self.beamsize_x(Zdif_x))**2 - ((Z - Zlas) / (2 * self.sigz))**2)
-        else:
-            offaxis_pulsed_factor = np.exp(-(Y / self.beamsize_y(Zdif_y))**2 - (X / self.beamsize_x(Zdif_x))**2)
-        
-        phase = np.cos(self.k * Z + (self.phi * (const.c * T - Z)**2) - self.omega * T - self.k / 2 * X**2 / R_x - self.k / 2 * Y**2 / R_y) # + np.arctan(Zdif/l1_zRx))  # include this for Gouy phase shift
-        return central_E_field * offaxis_pulsed_factor * phase
+        spatial_factor = np.exp(
+            -(Y / self.beamsize_y(Zdif_y)) ** 2
+            - (X / self.beamsize_x(Zdif_x)) ** 2
+        )
+
+        # Temporal factor (retarded time)
+        tau = T - (Z + self.Z_offset) / c
+        temporal_factor = np.interp(tau, self.t_array, self.E_temporal)
+
+        # Combine spatial and temporal factors
+        envelope = spatial_factor * temporal_factor if self.pulsed else spatial_factor
+
+        # Spatial phase terms (Gouy phase, wavefront curvature)
+        phase = np.cos(
+            - self.k * X ** 2 / (2 * R_x)
+            - self.k * Y ** 2 / (2 * R_y)
+            + np.arctan(Zdif_x / self.zRx)  # Gouy phase (x)
+            + np.arctan(Zdif_y / self.zRy)  # Gouy phase (y)
+        )
+
+        return central_E_field * envelope * phase
+
         
 class Lattice:
     def __init__(self, E0= 1492,l1= 800e-9, l2= 400e-9, h= 4, c1= 800, c2= 800, filename = None, is2d=True, plot = True):
@@ -496,7 +589,7 @@ def calc_R56(A11, A22, dE=7e-4, K=2, m=21, n=-1, wl=800e-9):
     bmax = max(bn)
     i = bn.index(bmax)
     r12 = R56_1[i]
-    rr1 = r12 if r12 > r11 else r11  # optimal R56(1)
+    rr1 = r12 if r12 < r11 else r11  # optimal R56(1)
     print("R56(1) =", np.round(rr1 * 1e6), "microns")
     return rr1, rr2
     
